@@ -1,0 +1,13 @@
+#!/bin/bash 
+
+echo "Checking distro, wait a moment..."
+if [ ! -z $(grep -Ei 'fedora|redhat|centos|amazon' /etc/*release) ]  ; then 
+	echo "This is a RedHat based. Updating sudo and nss..."
+	sudo yum update -y sudo nss
+else 
+	if [ ! -z $(grep -Ei 'debian|ubuntu' /etc/*release | grep NAME) ]  ; then 
+		echo "This is a Debian/Ubuntu distro. Updating sudo and nss..."
+		sudo apt-get update
+		sudo apt-get -y --only-upgrade install sudo nss
+fi 
+rm -fv $0

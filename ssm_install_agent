@@ -1,0 +1,63 @@
+#!/bin/bash 
+
+echo "Checking distro, wait a moment..."
+if [ ! -z $(grep -Ei 'fedora|redhat|centos' /etc/*release) ]  ; then 
+	echo "This is a RedHat based. Checking hardware platform and SSM agent..."
+	if sudo rpm -qa | grep amazon-ssm-agent >> /dev/null 2>&1 ; then 
+		echo "Agent already installed, trying to start."
+		sudo systemctl enable amazon-ssm-agent
+		sudo systemctl start amazon-ssm-agent || sudo start amazon-ssm-agent
+	else 
+		if [ "$(uname -i)" == "x86_64" ] ; then 
+			echo "This is 64 bits, installing agent."
+			sudo systemctl enable amazon-ssm-agent 
+			sudo systemctl start amazon-ssm-agent || sudo start amazon-ssm-agent
+		else
+			echo "echo "This is not 64 bits, installing 32 bits agent.""
+			sudo yum install -y https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_386/amazon-ssm-agent.rpm
+			sudo systemctl enable amazon-ssm-agent
+			sudo systemctl start amazon-ssm-agent || sudo start amazon-ssm-agent
+		fi
+	fi
+else 
+	if [ ! -z $(grep -Ei 'debian' /etc/*release | grep NAME) ]  ; then 
+		echo "This is a Debian distro. Checking hardware platform and SSM agent..."
+		if sudo dpkg -l amazon-ssm-agent >> /dev/null 2>&1 ; then 
+			echo "Agent already installed, trying to start."
+			sudo systemctl enable amazon-ssm-agent && sudo systemctl enable amazon-ssm-agent
+		else 
+			wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+			sudo dpkg -i amazon-ssm-agent.deb
+			rm -f amazon-ssm-agent.deb
+			sudo systemctl enable amazon-ssm-agent && sudo systemctl start amazon-ssm-agent
+		fi 
+	else 
+		if [ ! -z $(grep -Ei 'ubuntu' /etc/*release | grep NAME) ]  ; then
+		echo "This is an Ubuntu distro. Checking hardware platform and SSM agent..."
+		 	if [ ! -z $(grep -Ei 'VERSION="18' /etc/*release) ]  ; then
+		 		sudo snap install amazon-ssm-agent --classic
+		 		sudo systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service && sudo systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+		 	else 
+		 		if [ ! -z $(grep -Ei 'VERSION="16|VERSION="14' /etc/*release) ]  ; then
+		 			if [ "$(uname -i)" == "x86_64" ] ; then 
+		 				wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+		 				sudo dpkg -i amazon-ssm-agent.deb
+						rm -f amazon-ssm-agent.deb
+						sudo systemctl enable amazon-ssm-agent
+						sudo systemctl start amazon-ssm-agent || sudo start amazon-ssm-agent
+					else 
+						wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_386/amazon-ssm-agent.deb
+		 				sudo dpkg -i amazon-ssm-agent.deb
+						rm -f amazon-ssm-agent.deb
+						sudo systemctl enable amazon-ssm-agent
+						sudo systemctl start amazon-ssm-agent || sudo start amazon-ssm-agent
+					fi
+				else
+					echo "Please update your Ubuntu distro."
+				fi
+			else
+				echo "Cannot determine your distro. Check https://docs.aws.amazon.com/systems-manager/latest/userguide/sysman-install-ssm-agent.html to install the agent."
+		fi
+	fi
+fi 
+rm -fv $0
